@@ -1,8 +1,9 @@
 // Other imports at the top of the module
-import * as containerinstance from '@pulumi/azure-native/containerinstance'
+import * as containerinstance from '@pulumi/azure-native/containerinstance';
 // import * as dockerBuild from '@pulumi/docker-build'   <-- CHANGE: we no longer need this
-import * as resources from '@pulumi/azure-native/resources'
-import * as containerregistry from '@pulumi/azure-native/containerregistry'
+import * as cache from '@pulumi/azure-native/cache';
+import * as containerregistry from '@pulumi/azure-native/containerregistry';
+import * as resources from '@pulumi/azure-native/resources';
 import * as pulumi from "@pulumi/pulumi";
 
 // Import the configuration settings for the current stack.
@@ -61,8 +62,33 @@ const registryCredentials = containerregistry
 //   ],
 // })
 
+
+
+// Create a managed Redis service
+const redis = new cache.Redis(`${prefixName}-redis`, {
+  name: `${prefixName}-weather-cache`,
+  location: 'westus3',
+  resourceGroupName: resourceGroup.name,
+  enableNonSslPort: true,
+  redisVersion: 'Latest',
+  minimumTlsVersion: '1.2',
+  redisConfiguration: {
+    maxmemoryPolicy: 'allkeys-lru'
+  },
+  sku: {
+    name: 'Basic',
+    family: 'C',
+    capacity: 0
+  }
+})
+
+const redisAccessKey = cache
+  .listRedisKeysOutput({ name: redis.name, resourceGroupName: resourceGroup.name })
+  .apply(keys => keys.primaryKey)
+
 // --- CHANGE 2: Create a variable with the prebuilt image reference ---
 const prebuiltImageName = pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`
+const redisConnectionString = pulumi.interpolate`rediss://:${redisAccessKey}@${redis.hostName}:${redis.sslPort}`
 
 // Create a container group in the Azure Container App service and make it publicly accessible.
 const containerGroup = new containerinstance.ContainerGroup(
@@ -95,7 +121,11 @@ const containerGroup = new containerinstance.ContainerGroup(
           },
           {
             name: 'WEATHER_API_KEY',
-            value: '950bf0f874df4c0c7f7d23b7d80437eb',
+            value: config.requireSecret('weatherApiKey'),
+          },
+          {
+            name: 'REDIS_URL',
+            value: redisConnectionString
           },
         ],
         resources: {
