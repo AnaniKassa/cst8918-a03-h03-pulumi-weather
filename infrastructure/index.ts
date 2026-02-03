@@ -1,6 +1,6 @@
 // Other imports at the top of the module
 import * as containerinstance from '@pulumi/azure-native/containerinstance'
-import * as dockerBuild from '@pulumi/docker-build'
+// import * as dockerBuild from '@pulumi/docker-build'   <-- CHANGE: we no longer need this
 import * as resources from '@pulumi/azure-native/resources'
 import * as containerregistry from '@pulumi/azure-native/containerregistry'
 import * as pulumi from "@pulumi/pulumi";
@@ -43,25 +43,26 @@ const registryCredentials = containerregistry
     }
   })
 
-// export const acrServer = registry.loginServer
-// export const acrUsername = registryCredentials.username
+// --- CHANGE 1: Skip Pulumi Docker build completely ---
+// We will reference the prebuilt image in ACR instead
+// const image = new dockerBuild.Image(`${prefixName}-image`, {
+//   tags: [pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`],
+//   context: { location: appPath },
+//   dockerfile: { location: `${appPath}/Dockerfile` },
+//   target: 'production',
+//   platforms: ['linux/amd64', 'linux/arm64'],
+//   push: true,
+//   registries: [
+//     {
+//       address: registry.loginServer,
+//       username: registryCredentials.username,
+//       password: registryCredentials.password,
+//     },
+//   ],
+// })
 
-// Define the container image for the service.
-const image = new dockerBuild.Image(`${prefixName}-image`, {
-  tags: [pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`],
-  context: { location: appPath },
-  dockerfile: { location: `${appPath}/Dockerfile` },
-  target: 'production',
-  platforms: ['linux/amd64', 'linux/arm64'],
-  push: true,
-  registries: [
-    {
-      address: registry.loginServer,
-      username: registryCredentials.username,
-      password: registryCredentials.password,
-    },
-  ],
-})
+// --- CHANGE 2: Create a variable with the prebuilt image reference ---
+const prebuiltImageName = pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`
 
 // Create a container group in the Azure Container App service and make it publicly accessible.
 const containerGroup = new containerinstance.ContainerGroup(
@@ -80,7 +81,7 @@ const containerGroup = new containerinstance.ContainerGroup(
     containers: [
       {
         name: imageName,
-        image: image.ref,
+        image: prebuiltImageName, // --- CHANGE 3: reference the prebuilt image instead of dockerBuild.Image.ref
         ports: [
           {
             port: containerPort,
