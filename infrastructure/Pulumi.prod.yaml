@@ -8,4 +8,4 @@ config:
   cst8918-a03-infra:prefixName: 'cst8918a03kass0112'
   cst8918-a03-infra:imageTag: 'v0.2.0'
   cst8918-a03-infra:weatherApiKey:
-    secure: AAABAJSS1tQCIu0Qlnm2WtbasUOJlwRpFgsFNxVvLw1EEucA0HbeAlKdlecKGmtGaNwsVRn+fIzZWu2j+55lew==
+    secure: AAABABqXIcnpYkLZu4r0BAzZKCLHewSG6s0vBXYT1+qFBeNJwlfTjmQHZm6OvwrOHMPWxdA7ufTLVgnYhdiSsA==
