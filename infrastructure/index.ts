@@ -1,14 +1,13 @@
 // Other imports at the top of the module
 import * as containerinstance from '@pulumi/azure-native/containerinstance';
 // import * as dockerBuild from '@pulumi/docker-build'   <-- CHANGE: we no longer need this
-import * as cache from '@pulumi/azure-native/cache';
 import * as containerregistry from '@pulumi/azure-native/containerregistry';
+import * as cache from '@pulumi/azure-native/redis';
 import * as resources from '@pulumi/azure-native/resources';
 import * as pulumi from "@pulumi/pulumi";
 
 // Import the configuration settings for the current stack.
 const config = new pulumi.Config()
-const appPath = config.require('appPath')
 const prefixName = config.require('prefixName')
 const imageName = prefixName
 const imageTag = config.require('imageTag')
